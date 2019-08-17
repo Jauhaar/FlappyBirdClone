@@ -3,8 +3,8 @@ var canvas = document.getElementById("GameBoard");
 var ctx = canvas.getContext("2d");
 
 //Starting position
-var x = 100;
-var birdPos = canvas.height/2;
+var x = 100; //bird x position (static)
+var birdPos = canvas.height/2; //bird y position
 
 var BirdSize = 20;
 
@@ -12,6 +12,11 @@ var fallSpeed = 2;
 var jumpSpeed = 50;
 
 var score = 0;
+
+//For Pipes
+var xStart = canvas.width + 5;
+var pipeSpeed = 1;
+var pipes = []; //Array to store the Object Pool
 
 //Function to generate a random number within a min and max range
 function Random(min, max)
@@ -50,24 +55,14 @@ function drawScore()
     ctx.fillText(score.toString(), 25,25);
 }
 
-//get random top
-var topY = Random(25, canvas.height - 125);    
-
-//get random from bottom
-var bottomY = Random(topY, canvas.height - 100);
-
-var pipePos = canvas.width;
-var pipeSpeed = 1;
-
-var xStart = canvas.width + 50;
-var pipes = [];
-for(var i = 0; i < 5; i++)
+//Initial population of the Object Pool for the pipes
+for(var i = 0; i < 5; i++) 
 {
     var pipeWidth = 20;
-
     var tempTY = Random(25, canvas.height - 125);
-    var tempBY = Random(topY, canvas.height - 100);
+    //var tempBY = Random(topY, canvas.height - 100);
     
+    //Array stores JSON objects
     pipes[i] = {x: xStart,
                 width: pipeWidth,
                 topHeight: tempTY,
@@ -78,30 +73,16 @@ for(var i = 0; i < 5; i++)
 
 function drawPipes(x, width, topHeight, bottomHeight)
 {
+    //Top Pipe
     ctx.beginPath();
     ctx.rect(x, 0, width, topHeight);
     ctx.fillStyle = "white";
     ctx.fill();
     ctx.closePath();
 
+    //Bottom Pipe
     ctx.beginPath();
     ctx.rect(x, topHeight + 100, width, bottomHeight);
-    ctx.fillStyle = "white";
-    ctx.fill();
-    ctx.closePath();
-}
-
-//TEST
-function drawPipesTest()
-{
-    ctx.beginPath();
-    ctx.rect(pipePos, 0, 20, topY);
-    ctx.fillStyle = "white";
-    ctx.fill();
-    ctx.closePath();
-
-    ctx.beginPath();
-    ctx.rect(pipePos, topY + 100, 20, canvas.height);
     ctx.fillStyle = "white";
     ctx.fill();
     ctx.closePath();
@@ -112,41 +93,58 @@ function drawGame()
     //Clears canvas after each frame refresh
     ctx.clearRect(0,0, canvas.width, canvas.height);
     
-    //Draw flappy bird and score
+    //Draw flappy bird
     drawBird();
 
     //Draw pipes
     for(var i = 0; i < 5; i++)
     {
-        //spawn pipes
+        //Spawn pipes
         drawPipes(pipes[i].x, pipes[i].width, pipes[i].topHeight, pipes[i].bottomHeight);
 
         //Pipe Movement
-        pipes[i].x -= pipeSpeed;
+        pipes[i].x -= pipeSpeed;        
 
-        //collision
+        //Reuses pipes using Object Pooling
+        for(var n = 0; n < 5; n++)
+        {
+            if(pipes[n].x == 0)
+            {
+                pipes[n].x = canvas.width;
+                pipes[n].topHeight = Random(25, canvas.height - 125);
+            }
+        }
+
+        //If bird falls out of screen
+        if(birdPos >= canvas.height + BirdSize)
+        {
+            birdPos = canvas.height/2;
+            alert("Game Over!" + "\n" + "Your Score: " + score.toString());
+            document.location.reload();
+        } 
+
+        //Collision
         if(birdPos <= pipes[i].topHeight && x == pipes[i].x - (BirdSize - 5))
         {
-            alert("Game Over!");
+            alert("Game Over!" + "\n" + "Your Score: " + score.toString());
             document.location.reload(); 
         }
         else if(birdPos >= pipes[i].topHeight + 100 && x == pipes[i].x - (BirdSize - 5))
         {
-            alert("Game Over!");
+            alert("Game Over!" + "\n" + "Your Score: " + score.toString());
             document.location.reload(); 
         }
 
-        //score
+        //Score System
         if(pipes[i].x == x)
         {
             score++;
         }     
-    }
+    }//End DrawPipes For Loop
 
     //Bird movement
     birdPos += fallSpeed;
 
     drawScore();
-
 }
 setInterval(drawGame, 20);
